@@ -2,7 +2,6 @@ import tensorflow as tf
 import numpy as np
 from scipy.spatial import distance
 
-#corpus_raw = 'He is the king . The king is royal . She is the royal  queen '
 corpus_raw = 'I saw a lion in the zoo . Ayush went to zoo . Ayush saw a tiger in the zoo . She saw an elephant in the zoo . Mary and John went to the mall . Ayush saw clothes in mall '
 
 # convert to lower case
