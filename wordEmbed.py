@@ -1,42 +1,53 @@
 import tensorflow as tf
 import numpy as np
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.stem import WordNetLemmatizer
+from nltk.corpus import stopwords
 from scipy.spatial import distance
+import random
+from collections import Counter 
 
-corpus_raw = 'I saw a lion in the zoo . Ayush went to zoo . Ayush saw a tiger in the zoo . She saw an elephant in the zoo . Mary and John went to the mall . Ayush saw clothes in mall '
+lemmatizer = WordNetLemmatizer()
 
-# convert to lower case
-corpus_raw = corpus_raw.lower()
+def create_lexicon(sample):
+	lexicon = []
+	stop_words = set(stopwords.words('english'))
+	with open(sample,'r') as f:
+		contents = f.readlines()
+		for l in contents[:100]:
+			all_words = word_tokenize(l)
+			lexicon += list(all_words)
+		lexicon=[word.lower() for word in lexicon if word.isalpha()]
+	lexicon = [lemmatizer.lemmatize(i) for i in lexicon]
+	lexicon = [w for w in lexicon if not w in stop_words]
+	w_counts = Counter(lexicon)
+	vocab = []
+	for w in w_counts:
+		if 1000 > w_counts[w] > 50:
+		    vocab.append(w)
+	return vocab, lexicon
 
-words = []
-for word in corpus_raw.split():
-    if word != '.': # because we don't want to treat . as a word
-        words.append(word)
+vocab, corpus = create_lexicon('enwik8')
+vocab_size = len(vocab)
+print (vocab)
+print (corpus)
 
-words = set(words) # so that all duplicate words are removed
 word2int = {}
 int2word = {}
-vocab_size = len(words) # gives the total number of unique words
-
-for i,word in enumerate(words):
+for i,word in enumerate(vocab):
     word2int[word] = i
     int2word[i] = word
-
-# raw sentences is a list of sentences.
-raw_sentences = corpus_raw.split('.')
-sentences = []
-for sentence in raw_sentences:
-    sentences.append(sentence.split())
 
 WINDOW_SIZE = 2
 
 data = []
-for sentence in sentences:
-    for word_index, word in enumerate(sentence):
-        for nb_word in sentence[max(word_index - WINDOW_SIZE, 0) : min(word_index + WINDOW_SIZE, len(sentence)) + 1] : 
-            if nb_word != word:
-                data.append([word, nb_word])
 
-# function to convert numbers to one hot vectors
+for word_index, word in enumerate(corpus):
+	for nb_word in corpus[max(word_index - WINDOW_SIZE, 0) : min(word_index + WINDOW_SIZE, len(corpus)) + 1] : 
+		if nb_word != word:
+			data.append([word, nb_word])
+
 def to_one_hot(data_point_index, vocab_size):
     temp = np.zeros(vocab_size)
     temp[data_point_index] = 1
@@ -67,12 +78,15 @@ b2 = tf.Variable(tf.random_normal([vocab_size]))
 prediction = tf.nn.softmax(tf.add( tf.matmul(hidden_representation, W2), b2))
 
 
+
 sess = tf.Session()
 init = tf.global_variables_initializer()
 sess.run(init) #make sure you do this!
 
+
 # define the loss function:
 cross_entropy_loss = tf.reduce_mean(-tf.reduce_sum(y_label * tf.log(prediction), reduction_indices=[1]))
+
 
 # define the training step:
 train_step = tf.train.GradientDescentOptimizer(0.1).minimize(cross_entropy_loss)
@@ -86,33 +100,34 @@ for _ in range(n_iters):
 
 vectors = sess.run(W1 + b1)
 
-def find_closest(word_index, vectors):
-    min_dist = 10000 # to act like positive infinity
-    min_index = -1
-    query_vector = vectors[word_index]
-    for index, vector in enumerate(vectors):
-        if distance.euclidean(vector, query_vector) < min_dist and not np.array_equal(vector, query_vector):
-            min_dist = distance.euclidean(vector, query_vector)
-            min_index = index
-    return min_index
-print('Ayush went to zoo')
-word = input('Enter your word you want to replace: ')
-print(word + " is replaced by: " + int2word[find_closest(word2int[word], vectors)])
-print('Ayush saw a tiger')
-word = input('Enter your word you want to replace: ')
-print(word + " replaced by: " + int2word[find_closest(word2int[word], vectors)])
-print('John went to mall')
-word = input('Enter your word you want to replace: ')
-print(word + " replaced by: " + int2word[find_closest(word2int[word], vectors)])
+"""def find_closest(word_index, vectors):
+	min_dist = 10000 # to act like positive infinity
+	min_index = -1
+	query_vector = vectors[word_index]
+	for index, vector in enumerate(vectors):
+		if distance.euclidean(vector, query_vector) < min_dist and not np.array_equal(vector, query_vector):
+		min_dist = distance.euclidean(vector, query_vector)
+		min_index = index
+	return min_index"""
 
+def find_closest(word_index, vectors):
+	min_dist = 10000 # to act like positive infinity
+	min_index = -1
+	query_vector = vectors[word_index]
+	for index, vector in enumerate(vectors):
+		if distance.euclidean(vector, query_vector) < min_dist and not np.array_equal(vector, query_vector):
+			min_dist = distance.euclidean(vector, query_vector)
+			min_index = index
+			#storage.append(min_index)
+	return min_index
 
 from sklearn import preprocessing
 import matplotlib.pyplot as plt
 vectors = preprocessing.normalize(vectors, norm='l2')
 
 fig, ax = plt.subplots()
-print(words)
-for word in words:
+print(word)
+for word in vocab:
     #print(word, vectors[word2int[word]][1])
     ax.annotate(word, (vectors[word2int[word]][0],vectors[word2int[word]][1] ))
 plt.show()
