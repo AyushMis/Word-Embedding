@@ -111,7 +111,25 @@ class GloVe(Vectors):
         super(GloVe, self).__init__(name, url=url, **kwargs)
         print(super(GloVe, self).__init__(name, url=url, **kwargs))
 
+def get_word(word):
+    return glove.vectors[glove.stoi[word]]
 
+def closest(vec, n=10):
+    """
+    Find the closest words for a given vector
+    """
+    all_dists = [(w, torch.dist(vec, get_word(w))) for w in glove.itos]
+    return sorted(all_dists, key=lambda t: t[1])[:n]
+
+def print_tuples(tuples):
+    for tuple in tuples:
+        print('(%.4f) %s' % (tuple[1], tuple[0]))
+        
+def listing(tuple):
+    temp = []
+    for element in tuple:
+        temp.append(element[0])
+    return temp
 
 
 def _default_unk_index():
@@ -129,20 +147,6 @@ pretrained_aliases = {
 glove = GloVe(name='840B1', dim=300)
 
 print('Loaded {} words'.format(len(glove.itos)))
-
-def get_word(word):
-    return glove.vectors[glove.stoi[word]]
-
-def closest(vec, n=10):
-    """
-    Find the closest words for a given vector
-    """
-    all_dists = [(w, torch.dist(vec, get_word(w))) for w in glove.itos]
-    return sorted(all_dists, key=lambda t: t[1])[:n]
-
-def print_tuples(tuples):
-    for tuple in tuples:
-        print('(%.4f) %s' % (tuple[1], tuple[0]))
 
 #Target word
 target_word = input("Enter the target word: ")
@@ -187,5 +191,10 @@ common_vector = vectors[0]
 for i in range(1,len(s)):
     common_vector+=vectors[i]
 
-print("Final Similar words: ")
+print("Similar words to whole context: ")
 print_tuples(closest(common_vector_))
+
+common = closest(common_vector)
+target_sim = closest(get_word(target_word))
+
+print("Similar words specific to target word: ",set(common_words).intersection(set(target_words)))
