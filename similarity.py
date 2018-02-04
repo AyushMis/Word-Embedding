@@ -179,22 +179,37 @@ for sentence in sentences:
                                                  #This is where we have to find some proper weightage to be
                                                  #given to contxt and target word individually
 i=0
+s = []
 for vector in vectors:
-    print("Similar words for sentence: ",i)
+    #print("Similar words for sentence: ",i)
     s.append(vector + get_word(target_word))
     i+=1
-    print_tuples(closest(vector + get_word(target_word))) #Adding second term of target_word for giving more weightage to the target wordas compared to context words.
+    #print_tuples(closest(vector + get_word(target_word))) #Adding second term of target_word for giving more weightage to the target wordas compared to context words.
 
 common_vector = vectors[0]
 
 #Evaluating a vector for whole set of sentences
-for i in range(1,len(s)):
-    common_vector+=vectors[i]
+if len(s)>1:
+    for i in range(1,len(s)):
+        common_vector+=vectors[i]
 
-print("Similar words to whole context: ")
-print_tuples(closest(common_vector_))
+    
+print("Common Similar words to context: ")
+print_tuples(closest(common_vector))
 
 common = closest(common_vector)
 target_sim = closest(get_word(target_word))
 
-print("Similar words specific to target word: ",set(common_words).intersection(set(target_words)))
+common_words = listing(common)
+target_words = listing(target_sim)
+
+final = []
+for word in target_words:
+    if word in common_words:
+        for word2, i in target_sim:
+            if word == word2:
+                prob = i
+                final.append((word, prob))
+
+print("Final list of similar words with their probabilities: ")
+print_tuples(final)
